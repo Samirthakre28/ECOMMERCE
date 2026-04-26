@@ -11,7 +11,7 @@ import { pageLoadVariant, staggerContainerVariant, staggerItemVariant, buttonMic
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, userProfile, updateProfile } = useAuth();
   const { cart, cartTotal, clearCart } = useCart();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -36,6 +36,20 @@ export default function Checkout() {
     }
   }, [user, cart, navigate, showToast]);
 
+  // Load profile data when available
+  useEffect(() => {
+    if (userProfile) {
+      setFormData({
+        fullName: userProfile.full_name || '',
+        phone: userProfile.phone || '',
+        address: userProfile.address || '',
+        city: userProfile.city || '',
+        state: userProfile.state || '',
+        pincode: userProfile.pincode || ''
+      });
+    }
+  }, [userProfile]);
+
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -45,6 +59,19 @@ export default function Checkout() {
     setLoading(true);
 
     try {
+      // 0. Update User Profile for the next time
+      const profileUpdates = {
+        full_name: formData.fullName,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
+      };
+      
+      // We don't await this to avoid delaying the order, though awaiting is safer
+      updateProfile(profileUpdates).catch(err => console.error('Error saving profile:', err));
+
       // 1. Create the Order Record targeting the new database columns
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
@@ -52,7 +79,7 @@ export default function Checkout() {
           user_id: user.id,
           total_amount: cartTotal,
           status: 'pending',
-          payment_method: 'card', // Mocking a standard payment option
+          payment_method: 'card', 
           full_name: formData.fullName,
           phone: formData.phone,
           address: formData.address,
@@ -65,7 +92,7 @@ export default function Checkout() {
 
       if (orderError) {
         console.error('Order creation error:', orderError);
-        throw new Error(orderError.message || 'Failed to create order record');
+        throw new Error(orderError.message || 'Failed to create order. Please check if the database schema is up to date.');
       }
 
       if (!orderData) {

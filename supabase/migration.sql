@@ -36,6 +36,26 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Ensure orders table has all delivery columns if it already existed
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS full_name TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS state TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS pincode TEXT;
+
+-- ================= PROFILES TABLE =================
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name TEXT,
+  phone TEXT,
+  address TEXT,
+  city TEXT,
+  state TEXT,
+  pincode TEXT,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ================= ORDER ITEMS TABLE =================
 CREATE TABLE IF NOT EXISTS order_items (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -120,6 +140,27 @@ CREATE POLICY "Users can insert their own order items"
       SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()
     )
   );
+
+-- Profiles: Users can only see and update their own profile
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their own profile" ON profiles;
+CREATE POLICY "Users can view their own profile"
+  ON profiles FOR SELECT
+  TO authenticated
+  USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+CREATE POLICY "Users can update their own profile"
+  ON profiles FOR UPDATE
+  TO authenticated
+  USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
+CREATE POLICY "Users can insert their own profile"
+  ON profiles FOR INSERT
+  TO authenticated
+  WITH CHECK (auth.uid() = id);
 
 -- ================= SEED DATA =================
 -- Default Products
