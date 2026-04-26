@@ -63,7 +63,14 @@ export default function Checkout() {
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Order creation error:', orderError);
+        throw new Error(orderError.message || 'Failed to create order record');
+      }
+
+      if (!orderData) {
+        throw new Error('Order was created but no data was returned. Check RLS policies.');
+      }
 
       // 2. Format Order Items
       const orderItems = cart.map((item) => ({
@@ -79,15 +86,18 @@ export default function Checkout() {
         .from('order_items')
         .insert(orderItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('Order items error:', itemsError);
+        throw new Error(itemsError.message || 'Failed to add items to order');
+      }
 
       // Clear the user's cart securely and move to success page
       clearCart();
       navigate('/success');
 
     } catch (err) {
-      console.error(err);
-      showToast('Failed to place order. Try again.', 'error');
+      console.error('Checkout error:', err);
+      showToast(err.message || 'Failed to place order. Try again.', 'error');
     } finally {
       setLoading(false);
     }

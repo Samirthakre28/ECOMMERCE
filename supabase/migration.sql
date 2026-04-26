@@ -94,7 +94,9 @@ DROP POLICY IF EXISTS "Admin can view all orders" ON orders;
 CREATE POLICY "Admin can view all orders"
   ON orders FOR SELECT
   TO authenticated
-  USING (true);
+  USING (
+    (SELECT email FROM auth.users WHERE id = auth.uid()) = 'dravon491@gmail.com'
+  );
 
 -- Order Items: Users can see items from their own orders
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
@@ -120,6 +122,7 @@ CREATE POLICY "Users can insert their own order items"
   );
 
 -- ================= SEED DATA =================
+-- Default Products
 INSERT INTO products (name, price, description, image, category, rating, stock, flipkart_url) VALUES
   ('Onyx Essential Tee', 1499, 'Premium heavyweight cotton tee in deep onyx black. Tailored for a relaxed, modern fit.', '/products/onyx-essential-tee.png', 'Men', 4.8, 100, 'https://www.flipkart.com/onyx-essential-tee-men-solid-round-neck/p/itm_onyx_tee'),
   ('Crimson Utility Jacket', 4599, 'A sleek utility jacket with subtle red accents and water-resistant finish.', '/products/crimson-utility-jacket.png', 'Men', 4.9, 40, 'https://www.flipkart.com/crimson-men-solid-utility-jacket/p/itm_crimson_jacket'),
@@ -137,3 +140,10 @@ INSERT INTO products (name, price, description, image, category, rating, stock, 
   ('Leather Ankle Boots', 5999, 'Genuine leather boots with a sharp pointed toe.', '/products/leather-ankle-boots.png', 'Women', 4.7, 40, NULL),
   ('Draped Evening Gown', 12999, 'Effortlessly elegant gown suitable for the highest profile events.', 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=600&q=80', 'Women', 4.9, 10, 'https://www.flipkart.com/draped-women-solid-evening-gown/p/itm_evening_gown'),
   ('Oversized Wool Coat', 9999, 'A heavy, draped wool coat that commands attention.', 'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=600&q=80', 'Men', 4.8, 18, 'https://www.flipkart.com/oversized-men-solid-wool-coat/p/itm_wool_coat');
+
+-- Seed the Fallback UUIDs so they are actually orderable
+INSERT INTO products (id, name, price, description, image, category, rating, stock)
+VALUES 
+  ('00000000-0000-0000-0000-000000000101', 'Onyx Essential Tee', 1499, 'Premium heavyweight cotton tee', '/products/onyx-essential-tee.png', 'Men', 4.8, 100),
+  ('00000000-0000-0000-0000-000000000102', 'Crimson Utility Jacket', 4599, 'A sleek utility jacket', '/products/crimson-utility-jacket.png', 'Men', 4.9, 40)
+ON CONFLICT (id) DO NOTHING;
