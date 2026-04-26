@@ -100,6 +100,7 @@ export function AuthProvider({ children }) {
     refreshProfile: () => user && fetchProfile(user.id)
   };
 
+
   return (
     <AuthContext.Provider value={value}>
       {children}

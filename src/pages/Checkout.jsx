@@ -70,7 +70,11 @@ export default function Checkout() {
       };
       
       // We don't await this to avoid delaying the order, though awaiting is safer
-      updateProfile(profileUpdates).catch(err => console.error('Error saving profile:', err));
+      if (typeof updateProfile === 'function') {
+        updateProfile(profileUpdates).catch(err => console.error('Error saving profile:', err));
+      } else {
+        console.warn('updateProfile is not available in useAuth()');
+      }
 
       // 1. Create the Order Record targeting the new database columns
       const { data: orderData, error: orderError } = await supabase
@@ -119,8 +123,8 @@ export default function Checkout() {
       }
 
       // Clear the user's cart securely and move to success page
-      clearCart();
       navigate('/success');
+      setTimeout(() => clearCart(), 100); 
 
     } catch (err) {
       console.error('Checkout error:', err);
@@ -130,7 +134,7 @@ export default function Checkout() {
     }
   };
 
-  if (!user || cart.length === 0) return null;
+  if (!user) return null;
 
   return (
     <>
